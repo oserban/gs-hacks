@@ -1,0 +1,107 @@
+<!--
+  ~ Copyright (c) 2016. This is a file, part of the GS Hacks project
+  ~  Everything is provided as it is, without any licence and guarantee
+  -->
+
+<project name="gs-hacks" basedir="." default="clean-compile" xmlns:ivy="antlib:org.apache.ivy.ant">
+    <property name="src.dir" value="src"/>
+    <property name="res.dir" value="res"/>
+
+    <property name="lib.dir" value="lib"/>
+    <property name="lib.jar.dir" value="${lib.dir}/jar"/>
+
+    <property name="build.dir" value="build"/>
+    <property name="build.out.dir" value="${build.dir}/out"/>
+    <property name="build.res.dir" value="${build.dir}/res"/>
+
+    <property name="prod.dir" value="prod"/>
+    <property name="prod.res.dir" value="${prod.dir}/res"/>
+    <property name="prod.lib.dir" value="${prod.dir}/lib"/>
+
+    <property name="main.class" value=""/>
+
+    <path id="classpath">
+        <fileset dir="${lib.jar.dir}" includes="**/*.jar"/>
+    </path>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+    </target>
+
+    <target name="compile" depends="getDependencies">
+        <mkdir dir="${build.out.dir}"/>
+        <mkdir dir="${build.res.dir}"/>
+        <javac target="1.8" source="1.8" srcdir="${src.dir}" destdir="${build.out.dir}" classpathref="classpath"
+               includeantruntime="false"/>
+
+        <copy todir="${build.res.dir}">
+            <fileset dir="${res.dir}">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="release" depends="clean,compile,git.revision">
+        <echo>Started building project ...</echo>
+        <mkdir dir="${prod.dir}"/>
+        <mkdir dir="${prod.res.dir}"/>
+        <mkdir dir="${prod.lib.dir}"/>
+
+        <copy todir="${prod.res.dir}">
+            <fileset dir="${build.res.dir}"/>
+        </copy>
+
+        <copy todir="${prod.lib.dir}">
+            <fileset dir="${lib.jar.dir}"/>
+        </copy>
+        <echo>Adding resources terminated ...</echo>
+
+        <jar destfile="${prod.lib.dir}/${ant.project.name}-${repository.version}.jar" basedir="${build.out.dir}">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="${main.class}"/>
+                <attribute name="Revision" value="${repository.version}"/>
+            </manifest>
+        </jar>
+        <echo>Jar build, have a nice day !</echo>
+    </target>
+
+    <target name="release-bundle" depends="release">
+        <jar destfile="${prod.dir}/${ant.project.name}-bundle-${repository.version}.jar" filesetmanifest="skip">
+            <zipgroupfileset dir="${prod.lib.dir}" includes="*.jar" excludes=""/>
+
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="${main.class}"/>
+                <attribute name="Revision" value="${repository.version}"/>
+            </manifest>
+        </jar>
+        <copy file="${prod.dir}/${ant.project.name}-bundle-${repository.version}.jar"
+              tofile="${prod.dir}/${ant.project.name}-bundle-latest.jar" overwrite="true"/>
+        <echo>Bundle build, have a nice day !</echo>
+    </target>
+
+    <target name="clean-compile" depends="clean,compile"/>
+
+    <target name="git.revision" description="Store git revision in ${repository.version}">
+        <exec executable="git" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
+            <arg value="describe"/>
+            <arg value="--tags"/>
+            <arg value="--always"/>
+            <arg value="--abbrev=0"/>
+            <arg value="HEAD"/>
+        </exec>
+        <condition property="repository.version" value="${git.revision}" else="unknown">
+            <and>
+                <isset property="git.revision"/>
+                <length string="${git.revision}" trim="yes" length="0" when="greater"/>
+            </and>
+        </condition>
+        <echo>Found revision: ${repository.version}</echo>
+    </target>
+
+    <target name="getDependencies">
+        <ivy:retrieve type="jar" pattern="${lib.jar.dir}/[artifact]-[revision].[ext]"/>
+        <ivy:retrieve type="bundle" pattern="${lib.jar.dir}/[artifact]-[revision].[ext]"/>
+    </target>
+</project>

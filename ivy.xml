@@ -1,0 +1,13 @@
+<!--
+  ~ Copyright (c) 2016. This is a file, part of the GS Hacks project
+  ~  Everything is provided as it is, without any licence and guarantee
+  -->
+
+<ivy-module version="2.0">
+    <info organisation="org" module="gs-hacks"/>
+    <dependencies>
+        <dependency org="org.graphstream" name="gs-ui" rev="1.3" />
+        <dependency org="org.graphstream" name="gs-algo" rev="1.3" />
+        <dependency org="org.graphstream" name="gs-core" rev="1.3" />
+    </dependencies>
+</ivy-module>
